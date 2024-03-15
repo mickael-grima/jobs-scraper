@@ -1,14 +1,8 @@
-import abc
-import os.path
+import os
 from typing import Iterator
 
+from .interface import Database
 import models
-
-
-class Database(abc.ABC):
-    @abc.abstractmethod
-    async def save_jobs(self, jobs: Iterator[models.LinkedInJob]):
-        pass
 
 
 class FileClient(Database):
@@ -63,8 +57,3 @@ class FileClient(Database):
                 f.write("\n".join(lines))
 
             i += 1  # counter to create a new file in the next loop
-
-
-class MySQLClient(Database):
-    async def save_jobs(self, jobs: Iterator[models.LinkedInJob]):
-        pass
