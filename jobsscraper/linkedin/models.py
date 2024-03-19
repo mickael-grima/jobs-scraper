@@ -1,6 +1,8 @@
 import pydantic
 from pydantic import Field
 
+__all__ = ["Company", "Location", "LinkedInJob"]
+
 
 class Company(pydantic.BaseModel):
     name: str = ...

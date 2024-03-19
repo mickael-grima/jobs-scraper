@@ -13,10 +13,9 @@ from selenium.webdriver.chrome.webdriver import WebDriver, Options
 from selenium.webdriver.common.by import By
 from selenium.webdriver.remote.webelement import WebElement
 
-import models
-import utils
+from . import models, utils
 
-__all__ = ["AllJobsScraper"]
+__all__ = ["AllJobsScraper", "SingleJobScraper"]
 
 linkedin_search_url = "https://www.linkedin.com/jobs/search"
 
@@ -191,7 +190,7 @@ class AllJobsScraper:
         return models.Location(full_location=loc)
 
     @staticmethod
-    @utils.silent_log_error()
+    @utils.silent_log_error(log_level=logging.DEBUG)
     def __get_job_posted_time(job: WebElement) -> str:
         return job.find_element(
             By.CLASS_NAME, "job-search-card__listdate--new").get_attribute("datetime")
@@ -203,6 +202,7 @@ class SingleJobScraper:
     Control the number of request per second to the linkedin servers
     Also, has a retry mechanism in case 429 error codes are caught
     """
+
     def __init__(self, *, nb_retries: int = 5, rqs: int = 1):
         """
         :param nb_retries: How many times we retry an http call in case of a 429 error code
@@ -280,4 +280,3 @@ def get_criterium(li: Tag) -> (str | None, str | None):
         if element.name == "span":
             value = element.text.strip(" \n")
     return criterium, value
-

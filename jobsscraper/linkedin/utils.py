@@ -1,13 +1,17 @@
 import logging
 
+__all__ = []
 
-def silent_log_error(default=None):
+from typing import Any
+
+
+def silent_log_error(default: Any = None, log_level: int = logging.ERROR):
     def decorator(func):
         def wrapper(*args, **kwargs):
             try:
                 return func(*args, **kwargs)
             except:
-                logging.exception(f"Error calling func={func.__name__}")
+                logging.log(log_level, f"Error calling func={func.__name__}")
                 return default
 
         return wrapper
