@@ -2,7 +2,17 @@
 
 This is a python module offering several jobs platform scrapers solutions
 
-## LinkedIn
+## Installation
+
+Cone this project, and:
+
+```commandline
+pip install .
+```
+
+## Supported Jobs Platforms
+
+### LinkedIn
 
 This sub-module takes care of:
 - fetching all jobs from the LinkedIn search page, with the function `scrap_all_jobs`
@@ -28,4 +38,23 @@ async def run():
 
 if __name__ == "__main__":
     asyncio.run(run())
+```
+
+#### Debugging
+
+In case the script is not working as expected, you have several way to debug it:
+- check the logs of course
+- pass the key-argument `headless=False` to the `scrap_all_jobs` method.
+This will open the Browser's interface, and you will be able to follow the different
+scraping steps
+- export the environment variable `LINKEDIN_SCREENSHOT_ON_ERROR=1` before running
+your script. It will take a screenshot of the last browser's page before the error
+is raised, if any.
+
+```commandline
+export LINKEDIN_SCREENSHOT_ON_ERROR=1
+```
+
+```python
+all_jobs = list(linkedin.scrap_all_jobs(location, keyword=keyword, headless=False))
 ```

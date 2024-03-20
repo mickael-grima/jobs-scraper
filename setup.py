@@ -4,7 +4,9 @@ setup(
     name='jobsscraper',
     version='0.1.0',
     author="Mickael Grima",
-    packages=find_packages(),
+    packages=find_packages(
+        exclude=["tests*"]
+    ),
     python_requires=">=3.10",
     install_requires=[
         "pydantic>=2.6,<3.0",

@@ -19,8 +19,17 @@ __all__ = ["AllJobsScraper", "SingleJobScraper"]
 
 linkedin_search_url = "https://www.linkedin.com/jobs/search"
 
+more_button_class_name = "infinite-scroller__show-more-button"
+jobs_results_class_name = "jobs-search__results-list"
+logo_class_name = "search-entity-media"
+benefits_class_name = "result-benefits__text"
+
 
 class AllJobsScraper:
+    # how long we try to scrap new jobs after
+    # scrolling down or clicking on More Jobs button
+    _scraping_jobs_timeout = 6
+
     def __init__(self, location: str, *, headless: bool = True):
         # location can be a country, state or city
         # ex: Germany | Munich | Munich, Bavaria, Germany
@@ -44,7 +53,7 @@ class AllJobsScraper:
             options.add_argument("--headless=new")
         return webdriver.Chrome(options=options)
 
-    # @utils.take_screenshot_on_error
+    @utils.take_screenshot_on_error
     def scrap_jobs(self, keywords: str = "", *, until: int = -1) -> Iterator[models.LinkedInJob]:
         """
         Go through the LinkedIn search page and scrap all the jobs there
@@ -69,7 +78,7 @@ class AllJobsScraper:
         self._driver.get(url)
 
         # Start scraping
-        jobs = self.__scrap_new_jobs(self._driver)
+        jobs = self.__scrap_new_jobs()
         nb_tries = 0
         counter = 0
         while nb_tries < 10:
@@ -80,7 +89,7 @@ class AllJobsScraper:
             # scroll down/click button to load more jobs
             if not self.__load_more_jobs():
                 break
-            jobs = self.__scrap_new_jobs(self._driver)
+            jobs = self.__scrap_new_jobs()
             if len(jobs) == 0:
                 logging.debug("No jobs found. Retrying ...")
                 nb_tries += 1
@@ -98,8 +107,7 @@ class AllJobsScraper:
         - by scrolling down
         """
         try:
-            button = self._driver.find_element(
-                By.CLASS_NAME, "infinite-scroller__show-more-button")
+            button = self._driver.find_element(By.CLASS_NAME, more_button_class_name)
             button.click()
             return True
         except NoSuchElementException:
@@ -112,23 +120,22 @@ class AllJobsScraper:
             self._driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
             return True
 
-    def __scrap_new_jobs(self, driver: WebDriver, timeout: int = 6) -> list[models.LinkedInJob]:
+    def __scrap_new_jobs(self) -> list[models.LinkedInJob]:
         """
         At this step, we have already loaded more job (by either clicking or scrolling down)
         and we need to fetch the new jobs. We might need to wait until it the content is fully
         loaded
 
         :param driver: Chrome driver
-        :param timeout: how long do we wait until we have new jobs loaded (in seconds)
 
         :return: the list of new found jobs
         """
         # Find all list elements. Since we just scrolled down, retry several times
         jobs: list[WebElement] = []
         start = time.time()
-        while time.time() - start < timeout and len(jobs) == 0:
+        while time.time() - start < self._scraping_jobs_timeout and len(jobs) == 0:
             try:
-                jobs_list = driver.find_element(By.CLASS_NAME, "jobs-search__results-list")
+                jobs_list = self._driver.find_element(By.CLASS_NAME, jobs_results_class_name)
                 jobs = jobs_list.find_elements(By.TAG_NAME, "li")[self._job_index:]
             except NoSuchElementException:
                 pass  # continue: it might load later
@@ -168,12 +175,12 @@ class AllJobsScraper:
         link = job.find_element(By.TAG_NAME, "h4").find_element(By.TAG_NAME, "a")
         try:
             logo = job.find_element(
-                By.CLASS_NAME, "search-entity-media").find_element(
+                By.CLASS_NAME, logo_class_name).find_element(
                 By.TAG_NAME, "a").get_attribute("data-ghost-url")
         except (AttributeError, NoSuchElementException):
             logo = None
         try:
-            benefit = job.find_element(By.CLASS_NAME, "result-benefits__text")
+            benefit = job.find_element(By.CLASS_NAME, benefits_class_name)
         except NoSuchElementException:
             benefit = None
         active_hiring = benefit.text.strip(' "').lower() == "actively hiring" if benefit else None
@@ -215,6 +222,9 @@ class SingleJobScraper:
         self._nb_retries = nb_retries
         self._sem = Semaphore(rqs)
 
+    def __del__(self):
+        self._session._connector._close()
+
     async def __request(self, url: str, *, retry_no: int = 0) -> str:
         """
         Get the html page by requesting the URL
@@ -226,6 +236,7 @@ class SingleJobScraper:
         try:
             async with self._session.get(url) as resp:
                 status = resp.status
+                print(status)
                 resp.raise_for_status()
                 return await resp.text()
         except aiohttp.ClientError:
