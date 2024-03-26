@@ -15,7 +15,7 @@ import jobsscraper.linkedin as lkd
 dir_ = os.path.dirname(os.path.abspath(__file__))
 
 
-with open(f"{dir_}/job.html") as f:
+with open(f"{dir_}/job.html.test") as f:
     html_data = f.read()
 
 
