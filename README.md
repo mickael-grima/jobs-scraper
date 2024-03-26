@@ -4,7 +4,7 @@ This is a python module offering several jobs platform scrapers solutions
 
 ## Installation
 
-Cone this project, and:
+Clone this project, and:
 
 ```commandline
 pip install .
