@@ -1,0 +1,6 @@
+[report]
+
+include = */jobsscraper/*
+omit =
+    # omit tests
+    */tests/*
